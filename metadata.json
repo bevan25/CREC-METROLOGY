@@ -1,0 +1,5 @@
+{
+  "name": "CREC METROLOGY SYSTEM",
+  "description": "Advanced Metrology Intelligence Platform for global measurement, analysis, and monitoring.",
+  "requestFramePermissions": ["geolocation"]
+}

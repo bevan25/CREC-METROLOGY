@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CREC METROLOGY SYSTEM - Advanced Metrology Intelligence Platform</title>
+    
+    <!-- CDN Libraries -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
+    <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://cdn.jsdelivr.net/npm/@google/genai@0.21.0/+esm"
+      }
+    }
+    </script>
+
+    <style>
+        :root {
+            --bg-deep: #0a0e27;
+            --bg-card: rgba(19, 24, 66, 0.7);
+            --neon-blue: #00d4ff;
+            --neon-green: #00ff88;
+            --neon-purple: #8b5cf6;
+            --neon-orange: #ff6b35;
+            --neon-red: #ff3366;
+            --text-main: #e2e8f0;
+            --text-muted: #64748b;
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glow-blue: 0 0 15px rgba(0, 212, 255, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Exo 2', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #particles-js {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* Splash Screen */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-deep);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 1s ease-out;
+        }
+
+        .loader-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            color: var(--neon-blue);
+            text-shadow: var(--glow-blue);
+            margin-bottom: 2rem;
+            letter-spacing: 5px;
+        }
+
+        .loader-bar {
+            width: 300px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .loader-progress {
+            width: 0%;
+            height: 100%;
+            background: var(--neon-blue);
+            box-shadow: var(--glow-blue);
+            transition: width 0.5s;
+        }
+
+        /* Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            grid-template-rows: 70px 1fr 40px;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Sidebar */
+        aside {
+            grid-row: 1 / 4;
+            background: rgba(10, 14, 39, 0.9);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            transition: width 0.3s;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-small {
+            color: var(--neon-blue);
+            font-size: 1.5rem;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .nav-sections {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .nav-group {
+            margin-bottom: 15px;
+        }
+
+        .nav-group-title {
+            padding: 0 20px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            color: var(--text-muted);
+        }
+
+        .nav-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--neon-blue);
+        }
+
+        .nav-item.active {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--neon-blue);
+            border-left-color: var(--neon-blue);
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Header */
+        header {
+            grid-column: 2;
+            background: rgba(10, 14, 39, 0.8);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            backdrop-filter: blur(5px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .search-container {
+            position: relative;
+            width: 350px;
+        }
+
+        .search-container input {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 8px 15px 8px 40px;
+            color: white;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        .search-container input:focus {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+        }
+
+        .search-container i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .time-display {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-blue);
+            font-size: 1.1rem;
+        }
+
+        .header-icon {
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            transition: color 0.3s;
+        }
+
+        .header-icon:hover {
+            color: var(--neon-blue);
+        }
+
+        /* Main Content */
+        main {
+            grid-column: 2;
+            overflow-y: auto;
+            padding: 30px;
+            position: relative;
+        }
+
+        .module-section {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .module-section.active {
+            display: block;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-auto-rows: minmax(150px, auto);
+            gap: 20px;
+        }
+
+        .glass-card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(15px);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+
+        .card-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 1.5px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 5px;
+        }
+
+        .card-unit {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-left: 5px;
+        }
+
+        .card-footer {
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        .trend-up { color: var(--neon-green); }
+        .trend-down { color: var(--neon-red); }
+
+        /* Map Container */
+        #map-container {
+            height: 600px;
+            width: 100%;
+            border-radius: 15px;
+            border: 1px solid var(--glass-border);
+            z-index: 10;
+        }
+
+        /* Footer */
+        footer {
+            grid-column: 2;
+            background: rgba(10, 14, 39, 0.9);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .glow-text {
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 80px 1fr;
+            }
+            aside { width: 80px; }
+            .nav-item span, .nav-group-title, .sidebar-header span { display: none; }
+            .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            header { padding: 0 15px; }
+            .search-container { width: 150px; }
+        }
+
+        /* Specific Module Styles */
+        .forecast-scroll {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .forecast-card {
+            min-width: 140px;
+            text-align: center;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .forecast-card:hover {
+            background: rgba(0, 212, 255, 0.05);
+            border-color: var(--neon-blue);
+        }
+
+        @keyframes drift {
+            from { transform: translateX(-50%); }
+            to { transform: translateX(0%); }
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .weather-icon-small {
+            transition: transform 0.3s;
+        }
+
+        .weather-icon-small:hover {
+            transform: scale(1.2);
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* Gauge styles */
+        .gauge-container {
+            position: relative;
+            width: 100px;
+            height: 50px;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        .gauge-bg {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 8px solid rgba(255,255,255,0.05);
+        }
+
+        .gauge-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 8px solid var(--neon-blue);
+            border-bottom-color: transparent;
+            border-left-color: transparent;
+            transform: rotate(-45deg);
+            transition: transform 1s;
+        }
+
+        /* Language Switcher */
+        .lang-btn {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            padding: 4px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .lang-btn:hover {
+            border-color: var(--neon-blue);
+        }
+
+        /* AI Prediction Panel */
+        .ai-panel {
+            border-left: 4px solid var(--neon-purple);
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.1), transparent);
+        }
+
+        /* Severe Alert Banner */
+        .alert-banner {
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            animation: pulse 2s infinite;
+        }
+
+        /* Aspect Ratios */
+        .aspect-16-9 { aspect-ratio: 16 / 9; }
+        .aspect-1-1 { aspect-ratio: 1 / 1; }
+        .aspect-4-3 { aspect-ratio: 4 / 3; }
+        .aspect-3-2 { aspect-ratio: 3 / 2; }
+        .aspect-9-16 { aspect-ratio: 9 / 16; }
+        .aspect-21-9 { aspect-ratio: 21 / 9; }
+        .aspect-4-1 { aspect-ratio: 4 / 1; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 51, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 51, 102, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="loader-logo">CREC METROLOGY SYSTEM</div>
+        <div class="loader-bar">
+            <div class="loader-progress" id="loader-progress"></div>
+        </div>
+        <div style="margin-top: 15px; color: var(--text-muted); font-size: 0.9rem;">Initializing Metrology Intelligence...</div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside>
+            <div class="sidebar-header">
+                <i class="fas fa-satellite-dish logo-small"></i>
+                <span style="font-family: 'Orbitron'; font-weight: bold; font-size: 1.2rem;">CREC™</span>
+            </div>
+            <div class="nav-sections">
+                <div class="nav-group">
+                    <div class="nav-group-title">Main</div>
+                    <div class="nav-item active" onclick="switchModule('dashboard')">
+                        <i class="fas fa-th-large"></i>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" onclick="switchModule('maps')">
+                        <i class="fas fa-globe"></i>
+                        <span>Global Maps</span>
+                    </div>
+                    <div class="nav-item" onclick="switchModule('stations')">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Metrology Stations</span>
+                    </div>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-title">Analysis</div>
+                    <div class="nav-item" onclick="switchModule('forecast')">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Forecasts</span>
+                    </div>
+                    <div class="nav-item" onclick="switchModule('media')">
+                        <i class="fas fa-images"></i>
+                        <span>Media Assets</span>
+                    </div>
+                    <div class="nav-item" onclick="switchModule('drought')">
+                        <i class="fas fa-tint-slash"></i>
+                        <span>Drought / Flood</span>
+                    </div>
+                    <div class="nav-item" onclick="switchModule('cyclone')">
+                        <i class="fas fa-hurricane"></i>
+                        <span>Cyclone Tracker</span>
+                    </div>
+                    <div class="nav-item" onclick="switchModule('rainfall')">
+                        <i class="fas fa-cloud-showers-heavy"></i>
+                        <span>Rainfall Analysis</span>
+                    </div>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-title">Specialized</div>
+                    <div class="nav-item" onclick="switchModule('agriculture')">
+                        <i class="fas fa-seedling"></i>
+                        <span>Agriculture</span>
+                    </div>
+                    <div class="nav-item" onclick="switchModule('marine')">
+                        <i class="fas fa-ship"></i>
+                        <span>Marine & Aviation</span>
+                    </div>
+                    <div class="nav-item" onclick="switchModule('climate')">
+                        <i class="fas fa-leaf"></i>
+                        <span>Climate Change</span>
+                    </div>
+                    <div class="nav-item" onclick="switchModule('aqi')">
+                        <i class="fas fa-smog"></i>
+                        <span>Air Quality</span>
+                    </div>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-title">Data</div>
+                    <div class="nav-item" onclick="switchModule('historical')">
+                        <i class="fas fa-history"></i>
+                        <span>Historical Data</span>
+                    </div>
+                    <div class="nav-item" onclick="switchModule('analytics')">
+                        <i class="fas fa-brain"></i>
+                        <span>AI Predictions</span>
+                    </div>
+                    <div class="nav-item" onclick="switchModule('education')">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>Education</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Header -->
+        <header>
+            <div class="header-left">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="city-search" placeholder="Search Global Cities (e.g. Tokyo, London, Hyderabad)...">
+                </div>
+                <div id="current-location-tag" style="color: var(--neon-blue); font-weight: bold;">
+                    <i class="fas fa-location-dot"></i> <span id="location-name">Detecting...</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="time-display" id="live-clock">00:00:00</div>
+                <select class="lang-btn" id="lang-selector">
+                    <option value="en">English</option>
+                    <option value="te">తెలుగు</option>
+                    <option value="hi">हिंदी</option>
+                    <option value="ta">தமிழ்</option>
+                </select>
+                <i class="fas fa-bell header-icon"></i>
+                <i class="fas fa-cog header-icon"></i>
+                <i class="fas fa-expand header-icon" onclick="toggleFullScreen()"></i>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="main-content">
+            
+            <!-- Module 1: Dashboard -->
+            <section id="dashboard" class="module-section active">
+                <div class="alert-banner" id="severe-alert" style="display: none;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>SEVERE WEATHER WARNING: High intensity rainfall predicted in your region within 2 hours.</span>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Main Weather Card -->
+                    <div class="glass-card" style="grid-column: span 2; grid-row: span 2;">
+                        <div class="card-title">Current Conditions <i class="fas fa-sync-alt"></i></div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div class="card-value" id="curr-temp">--<span class="card-unit">°C</span></div>
+                                <div style="color: var(--text-muted); font-size: 1.1rem;" id="curr-desc">Loading...</div>
+                                <div style="margin-top: 10px;">Feels like <span id="curr-feels">--</span>°C</div>
+                            </div>
+                            <div id="weather-anim-icon" class="weather-icon-large">
+                                <i class="fas fa-cloud-sun"></i>
+                            </div>
+                        </div>
+                        <div style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="glass-card" style="background: rgba(255,255,255,0.02); padding: 10px;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">HUMIDITY</div>
+                                <div style="font-size: 1.2rem; color: var(--neon-blue);" id="curr-humidity">--%</div>
+                            </div>
+                            <div class="glass-card" style="background: rgba(255,255,255,0.02); padding: 10px;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">WIND SPEED</div>
+                                <div style="font-size: 1.2rem; color: var(--neon-green);" id="curr-wind">-- km/h</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AQI Card -->
+                    <div class="glass-card aspect-1-1">
+                        <div class="card-title">Air Quality Index <i class="fas fa-wind"></i></div>
+                        <div class="card-value" id="curr-aqi">--</div>
+                        <div id="aqi-status" style="color: var(--neon-green);">Excellent</div>
+                        <div class="card-footer">Health: Low Risk</div>
+                    </div>
+
+                    <!-- UV Index -->
+                    <div class="glass-card aspect-1-1">
+                        <div class="card-title">UV Index <i class="fas fa-sun"></i></div>
+                        <div class="card-value" id="curr-uv">--</div>
+                        <div id="uv-status" style="color: var(--neon-orange);">Moderate</div>
+                        <div class="card-footer">Protection required</div>
+                    </div>
+
+                    <!-- Visibility -->
+                    <div class="glass-card aspect-1-1">
+                        <div class="card-title">Visibility <i class="fas fa-eye"></i></div>
+                        <div class="card-value" id="curr-visibility">-- <span class="card-unit">km</span></div>
+                        <div style="color: var(--text-muted);">Clear horizon</div>
+                    </div>
+
+                    <!-- Pressure -->
+                    <div class="glass-card aspect-1-1">
+                        <div class="card-title">Pressure <i class="fas fa-compress-arrows-alt"></i></div>
+                        <div class="card-value" id="curr-pressure">-- <span class="card-unit">hPa</span></div>
+                        <div style="color: var(--neon-blue);">Stable</div>
+                    </div>
+
+                    <!-- AI Insights -->
+                    <div class="glass-card ai-panel aspect-4-1" style="grid-column: span 2;">
+                        <div class="card-title">AI METROLOGY INSIGHT <i class="fas fa-robot"></i></div>
+                        <p id="ai-insight-text" style="font-size: 0.9rem; line-height: 1.5;">Analyzing global atmospheric patterns... Our neural network predicts a 15% increase in localized convection over the next 4 hours. No immediate threat detected.</p>
+                    </div>
+
+                    <!-- 48H Hourly Mini Chart -->
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Hourly Trend (48H)</div>
+                        <canvas id="hourlyMiniChart" height="80"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 2: Global Maps -->
+            <section id="maps" class="module-section">
+                <div class="glass-card" style="margin-bottom: 20px;">
+                    <div class="card-title">Interactive Metrology Control Map</div>
+                    <div id="map-container" class="aspect-16-9" style="height: auto;"></div>
+                    <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="lang-btn" onclick="setMapLayer('temp')">Temperature</button>
+                        <button class="lang-btn" onclick="setMapLayer('precip')">Precipitation</button>
+                        <button class="lang-btn" onclick="setMapLayer('wind')">Wind Patterns</button>
+                        <button class="lang-btn" onclick="setMapLayer('clouds')">Cloud Cover</button>
+                        <button class="lang-btn" onclick="setMapLayer('pressure')">Pressure Systems</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module: Metrology Stations (Google Maps Grounding) -->
+            <section id="stations" class="module-section">
+                <div class="glass-card" style="margin-bottom: 20px;">
+                    <div class="card-title">Metrology Stations & Facilities <i class="fas fa-map-marker-alt"></i></div>
+                    <p style="margin-bottom: 20px; color: var(--text-muted);">Find metrology laboratories, weather stations, and calibration facilities using Google Maps intelligence.</p>
+                    
+                    <div class="search-container" style="width: 100%; margin-bottom: 20px;">
+                        <input type="text" id="station-search-input" placeholder="Search for stations (e.g., 'Metrology labs in London')..." onkeypress="if(event.key === 'Enter') searchStations()">
+                        <i class="fas fa-search" onclick="searchStations()" style="cursor: pointer; right: 20px; left: auto;"></i>
+                    </div>
+
+                    <div id="stations-loader" style="display: none; text-align: center; padding: 40px;">
+                        <i class="fas fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--neon-blue);"></i>
+                        <p style="margin-top: 10px; color: var(--text-muted);">Querying Google Maps Grounding...</p>
+                    </div>
+
+                    <div id="stations-results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                        <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px; border: 1px dashed var(--glass-border); border-radius: 10px;">
+                            <i class="fas fa-search-location" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
+                            <p>Enter a location or facility type above to begin searching.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 4: Media Assets -->
+            <section id="media" class="module-section">
+                <div class="glass-card" style="margin-bottom: 20px;">
+                    <div class="card-title">Metrology Media Assets & Aspect Ratios</div>
+                    <p style="margin-bottom: 20px; color: var(--text-muted);">Demonstrating standard web design aspect ratios for metrological documentation and imaging.</p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                        <!-- 16:9 -->
+                        <div class="glass-card">
+                            <div class="card-title">16:9 Widescreen (Hero/Video)</div>
+                            <div class="aspect-16-9" style="background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                <img src="https://picsum.photos/seed/metrology1/1600/900" alt="16:9" style="width: 100%; height: 100%; object-fit: cover;" referrerPolicy="no-referrer">
+                            </div>
+                        </div>
+
+                        <!-- 1:1 -->
+                        <div class="glass-card">
+                            <div class="card-title">1:1 Square (Icons/Avatars)</div>
+                            <div class="aspect-1-1" style="background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                <img src="https://picsum.photos/seed/metrology2/1000/1000" alt="1:1" style="width: 100%; height: 100%; object-fit: cover;" referrerPolicy="no-referrer">
+                            </div>
+                        </div>
+
+                        <!-- 4:3 -->
+                        <div class="glass-card">
+                            <div class="card-title">4:3 Standard (Legacy/Galleries)</div>
+                            <div class="aspect-4-3" style="background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                <img src="https://picsum.photos/seed/metrology3/1200/900" alt="4:3" style="width: 100%; height: 100%; object-fit: cover;" referrerPolicy="no-referrer">
+                            </div>
+                        </div>
+
+                        <!-- 3:2 -->
+                        <div class="glass-card">
+                            <div class="card-title">3:2 Photography</div>
+                            <div class="aspect-3-2" style="background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                <img src="https://picsum.photos/seed/metrology4/1200/800" alt="3:2" style="width: 100%; height: 100%; object-fit: cover;" referrerPolicy="no-referrer">
+                            </div>
+                        </div>
+
+                        <!-- 9:16 -->
+                        <div class="glass-card">
+                            <div class="card-title">9:16 Portrait (Mobile/Stories)</div>
+                            <div class="aspect-9-16" style="background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 200px; margin: 0 auto;">
+                                <img src="https://picsum.photos/seed/metrology5/900/1600" alt="9:16" style="width: 100%; height: 100%; object-fit: cover;" referrerPolicy="no-referrer">
+                            </div>
+                        </div>
+
+                        <!-- 21:9 -->
+                        <div class="glass-card" style="grid-column: span 2;">
+                            <div class="card-title">21:9 Ultrawide (Immersive)</div>
+                            <div class="aspect-21-9" style="background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                <img src="https://picsum.photos/seed/metrology6/2100/900" alt="21:9" style="width: 100%; height: 100%; object-fit: cover;" referrerPolicy="no-referrer">
+                            </div>
+                        </div>
+
+                        <!-- 4:1 -->
+                        <div class="glass-card" style="grid-column: span 2;">
+                            <div class="card-title">4:1 Banner (Logos/CTAs)</div>
+                            <div class="aspect-4-1" style="background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                <img src="https://picsum.photos/seed/metrology7/2000/500" alt="4:1" style="width: 100%; height: 100%; object-fit: cover;" referrerPolicy="no-referrer">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 3: Forecast -->
+            <section id="forecast" class="module-section">
+                <div class="glass-card" style="margin-bottom: 20px;">
+                    <div class="card-title">15-Day Extended Forecast</div>
+                    <div class="forecast-scroll" id="forecast-container">
+                        <!-- Forecast cards injected here -->
+                    </div>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Temperature Trend (15 Days)</div>
+                        <canvas id="forecastTempChart"></canvas>
+                    </div>
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Precipitation Probability</div>
+                        <canvas id="forecastPrecipChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 5: Drought & Flood -->
+            <section id="drought" class="module-section">
+                <div class="dashboard-grid">
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Drought Severity Index (D0-D4)</div>
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <div id="drought-level-display" style="font-size: 3rem; font-weight: bold; color: var(--neon-orange);">D1</div>
+                            <div>
+                                <div style="font-size: 1.2rem;">Moderate Drought</div>
+                                <div style="color: var(--text-muted); font-size: 0.8rem;">Risk of water shortages and agricultural impact.</div>
+                            </div>
+                        </div>
+                        <canvas id="droughtTrendChart" style="margin-top: 20px;"></canvas>
+                    </div>
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Flood Risk Assessment</div>
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <div id="flood-risk-display" style="font-size: 3rem; font-weight: bold; color: var(--neon-green);">LOW</div>
+                            <div>
+                                <div style="font-size: 1.2rem;">No Immediate Flood Risk</div>
+                                <div style="color: var(--text-muted); font-size: 0.8rem;">River levels are currently within safe limits.</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px;">
+                                <span>River Basin Saturation</span>
+                                <span>24%</span>
+                            </div>
+                            <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px;">
+                                <div style="width: 24%; height: 100%; background: var(--neon-blue); border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 7: Cyclone Tracker -->
+            <section id="cyclone" class="module-section">
+                <div class="glass-card">
+                    <div class="card-title">Active Cyclone Tracking System</div>
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
+                        <div>
+                            <div class="glass-card" style="background: rgba(255, 51, 102, 0.05); border-color: var(--neon-red);">
+                                <div style="color: var(--neon-red); font-weight: bold;">ACTIVE THREAT</div>
+                                <div style="font-size: 1.5rem; margin: 10px 0;">Cyclone 'NEON'</div>
+                                <div style="font-size: 0.9rem;">Category: 3</div>
+                                <div style="font-size: 0.9rem;">Wind: 185 km/h</div>
+                                <div style="font-size: 0.9rem;">Movement: NW @ 15km/h</div>
+                            </div>
+                            <div style="margin-top: 20px;">
+                                <div class="card-title">Impact Probability</div>
+                                <canvas id="cycloneImpactChart" height="200"></canvas>
+                            </div>
+                        </div>
+                        <div id="cyclone-map" style="height: 450px; background: #000; border-radius: 10px; position: relative; overflow: hidden;">
+                            <!-- Simulated Cyclone Visualization -->
+                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('https://picsum.photos/seed/satellite/800/450') center/cover; opacity: 0.3;"></div>
+                            <div id="cyclone-eye" style="position: absolute; top: 40%; left: 50%; width: 60px; height: 60px; border: 2px dashed var(--neon-red); border-radius: 50%; animation: rotate 5s linear infinite;"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 8: Rainfall Analysis -->
+            <section id="rainfall" class="module-section">
+                <div class="dashboard-grid">
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Monsoon Progression Tracker <i class="fas fa-umbrella"></i></div>
+                        <canvas id="monsoonChart"></canvas>
+                    </div>
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Rainfall Intensity Distribution</div>
+                        <canvas id="rainIntensityChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 9: Agriculture -->
+            <section id="agriculture" class="module-section">
+                <div class="glass-card" style="margin-bottom: 20px;">
+                    <div class="card-title">Agricultural Weather Advisory <i class="fas fa-seedling"></i></div>
+                    <div style="display: flex; gap: 20px; align-items: start;">
+                        <div class="glass-card" style="flex: 1; background: rgba(0, 255, 136, 0.05);">
+                            <div style="font-weight: bold; color: var(--neon-green);">CROP ADVISORY: RICE</div>
+                            <p style="font-size: 0.9rem; margin-top: 10px;">Optimal planting window detected. Soil moisture is at 68%. Irrigation requirement: LOW for the next 72 hours.</p>
+                        </div>
+                        <div class="glass-card" style="flex: 1;">
+                            <div style="font-weight: bold;">Growing Degree Days (GDD)</div>
+                            <div class="card-value">1,240</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">Accumulated this season</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="glass-card">
+                        <div class="card-title">Soil Temp (10cm)</div>
+                        <div class="card-value">24.5<span class="card-unit">°C</span></div>
+                    </div>
+                    <div class="glass-card">
+                        <div class="card-title">Evapotranspiration</div>
+                        <div class="card-value">4.2<span class="card-unit">mm/day</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 11: Climate Change -->
+            <section id="climate" class="module-section">
+                <div class="dashboard-grid">
+                    <div class="glass-card" style="grid-column: span 4;">
+                        <div class="card-title">Global Temperature Anomaly (1880 - Present) <i class="fas fa-thermometer-three-quarters"></i></div>
+                        <canvas id="climateAnomalyChart" height="100"></canvas>
+                    </div>
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Atmospheric CO2 Levels</div>
+                        <div class="card-value">421.5 <span class="card-unit">ppm</span></div>
+                        <canvas id="co2Chart"></canvas>
+                    </div>
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Sea Level Rise Projection (2100)</div>
+                        <div class="card-value">+0.85 <span class="card-unit">meters</span></div>
+                        <canvas id="seaLevelChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 13: Air Quality -->
+            <section id="aqi" class="module-section">
+                <div class="dashboard-grid">
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Pollutant Breakdown <i class="fas fa-vial"></i></div>
+                        <canvas id="pollutantRadarChart"></canvas>
+                    </div>
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">AQI Forecast (7 Days)</div>
+                        <canvas id="aqiForecastChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 14: Marine & Aviation -->
+            <section id="marine" class="module-section">
+                <div class="dashboard-grid">
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Sea Surface Conditions <i class="fas fa-water"></i></div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">WAVE HEIGHT</div>
+                                <div class="card-value">1.2 <span class="card-unit">m</span></div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">TIDE STATUS</div>
+                                <div class="card-value" style="color: var(--neon-blue);">HIGH</div>
+                            </div>
+                        </div>
+                        <canvas id="tideChart" height="100"></canvas>
+                    </div>
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Aviation Weather (METAR) <i class="fas fa-plane"></i></div>
+                        <div style="background: rgba(0,0,0,0.3); padding: 15px; font-family: 'Courier New', monospace; border-radius: 5px; color: var(--neon-green);">
+                            VOHY 170530Z 28005KT 6000 FEW025 28/21 Q1012 NOSIG
+                        </div>
+                        <div style="margin-top: 15px; font-size: 0.85rem;">
+                            <strong>Decoded:</strong> Wind 280° at 5 knots. Visibility 6km. Few clouds at 2500ft. Temp 28°C.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 20: AI Analytics -->
+            <section id="analytics" class="module-section">
+                <div class="dashboard-grid">
+                    <div class="glass-card" style="grid-column: span 4;">
+                        <div class="card-title">Neural Network Weather Prediction Confidence <i class="fas fa-microchip"></i></div>
+                        <canvas id="aiConfidenceChart" height="100"></canvas>
+                    </div>
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Pattern Recognition Log</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">
+                            <div style="padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">[05:42] Anomaly detected in upper troposphere jet stream.</div>
+                            <div style="padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">[05:15] Correlation found with 1998 El Niño pattern (82% match).</div>
+                            <div style="padding: 5px 0;">[04:30] Recalibrating local convective available potential energy (CAPE).</div>
+                        </div>
+                    </div>
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Prediction Accuracy Score</div>
+                        <div class="card-value" style="color: var(--neon-green);">94.8%</div>
+                        <div style="font-size: 0.8rem;">Based on last 30 days actual vs predicted</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 18: Education -->
+            <section id="education" class="module-section">
+                <div class="dashboard-grid">
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Weather Glossary <i class="fas fa-book"></i></div>
+                        <div style="max-height: 300px; overflow-y: auto; font-size: 0.9rem;">
+                            <div style="margin-bottom: 10px;"><strong>Albedo:</strong> The fraction of solar energy reflected from the Earth back into space.</div>
+                            <div style="margin-bottom: 10px;"><strong>Barometer:</strong> An instrument used to measure atmospheric pressure.</div>
+                            <div style="margin-bottom: 10px;"><strong>Convection:</strong> The transfer of heat by the movement of a fluid (liquid or gas).</div>
+                            <div style="margin-bottom: 10px;"><strong>Dew Point:</strong> The temperature at which air becomes saturated with water vapor.</div>
+                        </div>
+                    </div>
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Metrology Quiz <i class="fas fa-question-circle"></i></div>
+                        <p>What is the primary cause of wind on Earth?</p>
+                        <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
+                            <button class="lang-btn">A) Earth's Rotation</button>
+                            <button class="lang-btn">B) Atmospheric Pressure Differences</button>
+                            <button class="lang-btn">C) Ocean Tides</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module: Historical Data -->
+            <section id="historical" class="module-section">
+                <div class="glass-card">
+                    <div class="card-title">Historical Metrology Records <i class="fas fa-history"></i></div>
+                    <div style="margin-bottom: 20px;">
+                        <canvas id="historicalChart" height="150"></canvas>
+                    </div>
+                    <div class="glass-card" style="background: rgba(255,255,255,0.02);">
+                        <div style="font-weight: bold; margin-bottom: 10px;">Climate Retrospective</div>
+                        <p style="font-size: 0.9rem; color: var(--text-muted);">Comparing current measurements against 50-year historical averages. Significant warming trends observed in the last decade (+1.2°C deviation).</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 16: Solar & Astronomical -->
+            <section id="solar" class="module-section">
+                <div class="dashboard-grid">
+                    <div class="glass-card">
+                        <div class="card-title">Solar Cycle <i class="fas fa-sun"></i></div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">SUNRISE</div>
+                            <div class="card-value" id="sunrise-time">06:12</div>
+                            <div style="margin: 15px 0;">
+                                <i class="fas fa-sun fa-spin" style="color: var(--neon-orange); font-size: 2rem;"></i>
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">SUNSET</div>
+                            <div class="card-value" id="sunset-time">18:45</div>
+                        </div>
+                    </div>
+                    <div class="glass-card">
+                        <div class="card-title">Moon Phase <i class="fas fa-moon"></i></div>
+                        <div style="text-align: center;">
+                            <div id="moon-phase-icon" style="font-size: 4rem; color: #f1f5f9; margin: 20px 0;">
+                                <i class="fas fa-moon"></i>
+                            </div>
+                            <div id="moon-phase-name">Waxing Gibbous</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">Illumination: 78%</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 25: Satellite Imagery Simulation -->
+            <section id="satellite" class="module-section">
+                <div class="glass-card">
+                    <div class="card-title">Simulated Satellite Imagery <i class="fas fa-satellite"></i></div>
+                    <div style="position: relative; height: 500px; background: #000; border-radius: 10px; overflow: hidden;">
+                        <img src="https://picsum.photos/seed/satellite_view/1200/600" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.6;" referrerPolicy="no-referrer">
+                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, transparent, rgba(0,0,0,0.8));"></div>
+                        <!-- Animated Cloud Overlays -->
+                        <div style="position: absolute; top: 20%; left: -100%; width: 200%; height: 200px; background: rgba(255,255,255,0.1); filter: blur(50px); animation: drift 60s linear infinite;"></div>
+                        <div style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; font-size: 0.7rem; color: var(--neon-green);">
+                            LIVE SATELLITE FEED: ACTIVE<br>
+                            RESOLUTION: 0.5m/px<br>
+                            SPECTRUM: INFRARED
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module 19: Personalized Dashboard -->
+            <section id="personalized" class="module-section">
+                <div class="dashboard-grid">
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">My Favorite Locations <i class="fas fa-star"></i></div>
+                        <div id="favorites-list" style="display: flex; flex-direction: column; gap: 10px;">
+                            <div class="glass-card" style="background: rgba(255,255,255,0.02); padding: 10px; display: flex; justify-content: space-between;">
+                                <span>Tokyo, JP</span>
+                                <span style="color: var(--neon-blue);">22°C <i class="fas fa-cloud"></i></span>
+                            </div>
+                            <div class="glass-card" style="background: rgba(255,255,255,0.02); padding: 10px; display: flex; justify-content: space-between;">
+                                <span>London, UK</span>
+                                <span style="color: var(--neon-blue);">12°C <i class="fas fa-cloud-rain"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card" style="grid-column: span 2;">
+                        <div class="card-title">Activity Planner <i class="fas fa-calendar-check"></i></div>
+                        <div style="font-size: 0.9rem;">
+                            <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-running" style="color: var(--neon-green);"></i>
+                                <span>Jogging: <strong>EXCELLENT</strong> conditions today.</span>
+                            </div>
+                            <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-umbrella-beach" style="color: var(--neon-orange);"></i>
+                                <span>Beach Trip: <strong>MODERATE</strong> risk (UV Index high).</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-car" style="color: var(--neon-blue);"></i>
+                                <span>Commute: <strong>CLEAR</strong> skies, no delays expected.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <div>CREC METROLOGY SYSTEM © 2026 | Advanced Metrology Intelligence</div>
+            <div id="api-status">
+                <span style="color: var(--neon-green);"><i class="fas fa-check-circle"></i> Open-Meteo API Online</span> | 
+                <span style="color: var(--neon-green);"><i class="fas fa-check-circle"></i> Satellite Link Active</span>
+            </div>
+            <div>Data Source: Open-Meteo & Simulated AI Models</div>
+        </footer>
+    </div>
+
+    <script>
+        // --- Global State & Config ---
+        const state = {
+            city: 'Hyderabad',
+            lat: 17.3850,
+            lon: 78.4867,
+            units: 'metric',
+            lang: 'en',
+            weatherData: null,
+            forecastData: null,
+            charts: {},
+            map: null,
+            layers: {}
+        };
+
+        const translations = {
+            en: { 
+                dashboard: "Dashboard", maps: "Global Maps", forecast: "Forecasts", 
+                drought: "Drought / Flood", cyclone: "Cyclone Tracker", rainfall: "Rainfall Analysis",
+                agriculture: "Agriculture", marine: "Marine & Aviation", climate: "Climate Change",
+                aqi: "Air Quality", historical: "Historical Data", analytics: "AI Predictions",
+                education: "Education", solar: "Solar & Astronomical", satellite: "Satellite Imagery",
+                personalized: "Personalized"
+            },
+            te: { 
+                dashboard: "డాష్‌బోర్డ్", maps: "ప్రపంచ పటాలు", forecast: "అంచనాలు",
+                drought: "కరువు / వరద", cyclone: "సైక్లోన్ ట్రాకర్", rainfall: "వర్షపాత విశ్లేషణ",
+                agriculture: "వ్యవసాయం", marine: "మెరైన్ & ఏవియేషన్", climate: "వాతావరణ మార్పు",
+                aqi: "గాలి నాణ్యత", historical: "చారిత్రక డేటా", analytics: "AI అంచనాలు",
+                education: "విద్య", solar: "సౌర & ఖగోళ", satellite: "శాటిలైట్ ఇమేజరీ",
+                personalized: "వ్యక్తిగతీకరించిన"
+            },
+            hi: { 
+                dashboard: "डैशबोर्ड", maps: "वैश्विक मानचित्र", forecast: "पूर्वानुमान",
+                drought: "सूखा / बाढ़", cyclone: "चक्रवात ट्रैकर", rainfall: "वर्षा विश्लेषण",
+                agriculture: "कृषि", marine: "समुद्री और विमानन", climate: "जलवायु परिवर्तन",
+                aqi: "वायु गुणवत्ता", historical: "ऐतिहासिक डेटा", analytics: "AI भविष्यवाणियां",
+                education: "शिक्षा", solar: "सौर और खगोलीय", satellite: "सैटेलाइट इमेजरी",
+                personalized: "व्यक्तिगत"
+            },
+            ta: { 
+                dashboard: "டாஷ்போர்டு", maps: "உலகளாவிய வரைபடங்கள்", forecast: "முன்கணிப்புகள்",
+                drought: "வறட்சி / வெள்ளம்", cyclone: "சூறாவளி கண்காணிப்பு", rainfall: "மழைப்பொழிவு பகுப்பாய்வு",
+                agriculture: "விவசாயம்", marine: "கடல் மற்றும் விமான போக்குவரத்து", climate: "காலநிலை மாற்றம்",
+                aqi: "காற்றின் தரம்", historical: "வரலாற்று தரவு", analytics: "AI கணிப்புகள்",
+                education: "கல்வி", solar: "சூரிய மற்றும் வானியல்", satellite: "செயற்கைக்கோள் படங்கள்",
+                personalized: "தனிப்பயனாக்கப்பட்டது"
+            }
+        };
+
+        // --- Initialization ---
+        window.onload = async () => {
+            initParticles();
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            // Simulate loading
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        document.getElementById('splash-screen').style.opacity = '0';
+                        setTimeout(() => document.getElementById('splash-screen').style.display = 'none', 1000);
+                    }, 500);
+                }
+                document.getElementById('loader-progress').style.width = progress + '%';
+            }, 100);
+
+            await initApp();
+        };
+
+        // --- AI & Prediction Algorithms ---
+        function runAIPredictions() {
+            const insightEl = document.getElementById('ai-insight-text');
+            const insights = [
+                "Neural network detected a significant pressure drop in the North Atlantic. Potential for cyclogenesis increased by 22%.",
+                "Anomaly detection: Surface temperatures in the Indian Ocean are 1.2°C above seasonal norm. Monsoon intensity may exceed expectations.",
+                "Pattern recognition: Current atmospheric configuration matches the 2014 'Polar Vortex' event with 74% similarity.",
+                "Machine learning model suggests a 65% probability of a heatwave in the next 10 days based on soil moisture deficits.",
+                "Satellite imagery analysis: Cloud formation patterns indicate high-altitude turbulence over the Himalayan range."
+            ];
+            
+            let i = 0;
+            setInterval(() => {
+                if (!insightEl) return;
+                insightEl.classList.add('animate__animated', 'animate__fadeOut');
+                setTimeout(() => {
+                    insightEl.innerText = insights[i];
+                    insightEl.classList.remove('animate__fadeOut');
+                    insightEl.classList.add('animate__fadeIn');
+                    i = (i + 1) % insights.length;
+                }, 1000);
+            }, 15000);
+        }
+
+        // --- Translation System ---
+        function updateLanguage(lang) {
+            const t = translations[lang] || translations.en;
+            // Map module names
+            document.querySelectorAll('.nav-item span').forEach(span => {
+                const key = span.innerText.toLowerCase().replace(' ', '');
+                if (t[key]) span.innerText = t[key];
+            });
+            
+            // Update specific UI elements
+            const labels = {
+                en: { search: "Search Global Cities...", current: "Current Conditions" },
+                te: { search: "ప్రపంచ నగరాలను వెతకండి...", current: "ప్రస్తుత పరిస్థితులు" },
+                hi: { search: "वैश्विक शहरों की खोज करें...", current: "वर्तमान स्थिति" },
+                ta: { search: "உலகளாவிய நகரங்களைத் தேடுங்கள்...", current: "தற்போதைய நிலை" }
+            };
+            
+            document.getElementById('city-search').placeholder = labels[lang].search;
+        }
+
+        // --- Weather Animations ---
+        function setWeatherAnimation(type) {
+            const container = document.getElementById('particles-js');
+            if (!container) return;
+            
+            let config = {
+                "particles": {
+                    "number": { "value": 100 },
+                    "color": { "value": "#ffffff" },
+                    "shape": { "type": "circle" },
+                    "opacity": { "value": 0.5 },
+                    "size": { "value": 3 },
+                    "move": { "enable": true, "speed": 5, "direction": "bottom" }
+                }
+            };
+
+            if (type === 'rain') {
+                config.particles.shape.type = "line";
+                config.particles.move.speed = 15;
+                config.particles.color.value = "#00d4ff";
+            } else if (type === 'snow') {
+                config.particles.move.speed = 2;
+                config.particles.opacity.value = 0.8;
+            } else if (type === 'storm') {
+                config.particles.number.value = 150;
+                config.particles.move.speed = 20;
+                simulateLightning();
+            }
+
+            if (window.particlesJS) particlesJS('particles-js', config);
+        }
+
+        function simulateLightning() {
+            setInterval(() => {
+                if (Math.random() > 0.95) {
+                    document.body.style.backgroundColor = "rgba(255,255,255,0.1)";
+                    setTimeout(() => document.body.style.backgroundColor = "var(--bg-deep)", 50);
+                }
+            }, 100);
+        }
+
+        // --- Notification Center ---
+        function pushAlert(message, severity = 'info') {
+            const alertBanner = document.getElementById('severe-alert');
+            if (!alertBanner) return;
+            const alertText = alertBanner.querySelector('span');
+            alertText.innerText = message;
+            alertBanner.style.display = 'flex';
+            
+            if (severity === 'emergency') {
+                alertBanner.style.background = 'rgba(255, 51, 102, 0.2)';
+                playAlertSound();
+            }
+        }
+
+        function playAlertSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+                oscillator.connect(audioCtx.destination);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.5);
+            } catch (e) { console.log("Audio blocked by browser"); }
+        }
+
+        // --- App Initialization ---
+        async function initApp() {
+            await fetchWeatherData();
+            initMap();
+            initCharts();
+            renderForecast();
+            setupEventListeners();
+            runAIPredictions();
+            updateSolarData();
+            
+            // Check for severe weather
+            if (state.weatherData && state.weatherData.current) {
+                if (state.weatherData.current.weather_code >= 95) {
+                    pushAlert("SEVERE THUNDERSTORM DETECTED: Seek shelter immediately.", "emergency");
+                    setWeatherAnimation('storm');
+                } else if (state.weatherData.current.precipitation > 0) {
+                    setWeatherAnimation('rain');
+                }
+            }
+        }
+
+        function updateSolarData() {
+            if (!state.weatherData) return;
+            const daily = state.weatherData.daily;
+            document.getElementById('sunrise-time').innerText = daily.sunrise[0].split('T')[1];
+            document.getElementById('sunset-time').innerText = daily.sunset[0].split('T')[1];
+        }
+
+        // --- Core Functions ---
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-clock').innerText = now.toLocaleTimeString();
+        }
+
+        async function fetchWeatherData() {
+            try {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,pressure_msl,surface_pressure,cloud_cover,visibility,evapotranspiration,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index,uv_index_clear_sky,is_day,sunshine_duration,shortwave_radiation,direct_radiation,diffuse_radiation,direct_normal_irradiance,terrestrial_radiation,shortwave_radiation_instant,direct_radiation_instant,diffuse_radiation_instant,direct_normal_irradiance_instant,terrestrial_radiation_instant&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,daylight_duration,sunshine_duration,uv_index_max,uv_index_clear_sky_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,et0_fao_evapotranspiration&timezone=auto`;
+                const response = await fetch(url);
+                const data = await response.json();
+                state.weatherData = data;
+                updateDashboardUI(data);
+            } catch (error) {
+                console.error("Weather Fetch Error:", error);
+            }
+        }
+
+        function updateDashboardUI(data) {
+            const current = data.current;
+            document.getElementById('location-name').innerText = state.city;
+            document.getElementById('curr-temp').innerHTML = `${Math.round(current.temperature_2m)}<span class="card-unit">°C</span>`;
+            document.getElementById('curr-feels').innerText = Math.round(current.apparent_temperature);
+            document.getElementById('curr-humidity').innerText = `${current.relative_humidity_2m}%`;
+            document.getElementById('curr-wind').innerText = `${current.wind_speed_10m} km/h`;
+            document.getElementById('curr-pressure').innerHTML = `${current.pressure_msl} <span class="card-unit">hPa</span>`;
+            document.getElementById('curr-desc').innerText = getWeatherDesc(current.weather_code);
+            
+            // Simulated AQI & UV for demo (Open-Meteo has them in hourly/daily but we simulate for instant feel)
+            document.getElementById('curr-aqi').innerText = Math.floor(Math.random() * 50) + 20;
+            document.getElementById('curr-uv').innerText = data.daily.uv_index_max[0];
+            document.getElementById('curr-visibility').innerHTML = `${data.hourly.visibility[0] / 1000} <span class="card-unit">km</span>`;
+
+            updateWeatherIcon(current.weather_code, current.is_day);
+            updateHourlyMiniChart(data.hourly);
+        }
+
+        function getWeatherDesc(code) {
+            const codes = {
+                0: "Clear Sky", 1: "Mainly Clear", 2: "Partly Cloudy", 3: "Overcast",
+                45: "Fog", 48: "Depositing Rime Fog", 51: "Light Drizzle", 61: "Slight Rain",
+                71: "Slight Snow", 80: "Slight Rain Showers", 95: "Thunderstorm"
+            };
+            return codes[code] || "Variable Conditions";
+        }
+
+        function updateWeatherIcon(code, isDay) {
+            const iconEl = document.getElementById('weather-anim-icon');
+            let iconClass = "fas fa-cloud-sun";
+            if (code === 0) iconClass = isDay ? "fas fa-sun" : "fas fa-moon";
+            else if (code < 3) iconClass = isDay ? "fas fa-cloud-sun" : "fas fa-cloud-moon";
+            else if (code === 3) iconClass = "fas fa-cloud";
+            else if (code >= 51 && code <= 67) iconClass = "fas fa-cloud-rain";
+            else if (code >= 95) iconClass = "fas fa-bolt";
+            
+            iconEl.innerHTML = `<i class="${iconClass}"></i>`;
+            iconEl.style.color = (code >= 95) ? 'var(--neon-purple)' : 'var(--neon-blue)';
+        }
+
+        // --- UI Logic ---
+        function switchModule(moduleId) {
+            try {
+                const target = document.getElementById(moduleId);
+                if (!target) {
+                    console.warn(`Module section with ID "${moduleId}" not found.`);
+                    // Fallback to dashboard if module not found
+                    if (moduleId !== 'dashboard') switchModule('dashboard');
+                    return;
+                }
+
+                // Hide all sections
+                const sections = document.querySelectorAll('.module-section');
+                sections.forEach(sec => {
+                    if (sec) sec.classList.remove('active');
+                });
+
+                // Deactivate all nav items
+                const navItems = document.querySelectorAll('.nav-item');
+                navItems.forEach(item => {
+                    if (item) item.classList.remove('active');
+                });
+                
+                // Activate target section
+                target.classList.add('active');
+                
+                // Set active nav item
+                navItems.forEach(item => {
+                    if (item) {
+                        const onclick = item.getAttribute('onclick');
+                        if (onclick && onclick.includes(`'${moduleId}'`)) {
+                            item.classList.add('active');
+                        }
+                    }
+                });
+
+                if (moduleId === 'maps' && state.map) {
+                    setTimeout(() => state.map.invalidateSize(), 100);
+                }
+            } catch (error) {
+                console.error("Error switching module:", error);
+            }
+        }
+
+        function setupEventListeners() {
+            const searchInput = document.getElementById('city-search');
+            searchInput.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter') {
+                    const city = searchInput.value;
+                    if (city) await searchCity(city);
+                }
+            });
+
+            document.getElementById('lang-selector').addEventListener('change', (e) => {
+                state.lang = e.target.value;
+                // Update UI text based on language
+            });
+        }
+
+        async function searchCity(city) {
+            try {
+                const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1&language=en&format=json`;
+                const res = await fetch(geoUrl);
+                const data = await res.json();
+                if (data.results && data.results.length > 0) {
+                    const result = data.results[0];
+                    state.city = result.name;
+                    state.lat = result.latitude;
+                    state.lon = result.longitude;
+                    await fetchWeatherData();
+                    renderForecast();
+                    if (state.map) state.map.setView([state.lat, state.lon], 10);
+                }
+            } catch (error) {
+                console.error("Geo Search Error:", error);
+            }
+        }
+
+        // --- Map System ---
+        function initMap() {
+            state.map = L.map('map-container', {
+                center: [state.lat, state.lon],
+                zoom: 5,
+                zoomControl: false
+            });
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(state.map);
+
+            L.control.zoom({ position: 'bottomright' }).addTo(state.map);
+            
+            // Add initial marker
+            L.marker([state.lat, state.lon]).addTo(state.map)
+                .bindPopup(`<b>${state.city}</b><br>Metrology Station Active`)
+                .openPopup();
+        }
+
+        function setMapLayer(type) {
+            // In a real app, we'd add OpenWeatherMap tile layers here
+            // For this demo, we simulate layer switching
+            console.log("Switching map layer to:", type);
+            // Simulated: L.tileLayer(`https://tile.openweathermap.org/map/${type}_new/{z}/{x}/{y}.png?appid=YOUR_KEY`).addTo(state.map);
+        }
+
+        // --- Chart System ---
+        function initCharts() {
+            initDashboardCharts();
+            initForecastCharts();
+            initDroughtCharts();
+            initRainfallCharts();
+            initClimateCharts();
+            initAQICharts();
+            initMarineCharts();
+            initAICharts();
+            initHistoricalCharts();
+            initAgricultureCharts();
+            initSolarCharts();
+        }
+
+        function initAgricultureCharts() {
+            // (Simulated data for agriculture charts)
+            console.log("Agriculture charts initialized");
+        }
+
+        function initSolarCharts() {
+            // (Simulated data for solar charts)
+            console.log("Solar charts initialized");
+        }
+
+        function initDashboardCharts() {
+            // Hourly Mini Chart
+            const el = document.getElementById('hourlyMiniChart');
+            if (!el) return;
+            const ctxHourly = el.getContext('2d');
+            state.charts.hourly = new Chart(ctxHourly, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                    datasets: [{
+                        label: 'Temp (°C)',
+                        data: Array.from({length: 24}, () => Math.floor(Math.random() * 10) + 20),
+                        borderColor: '#00d4ff',
+                        backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { 
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#64748b', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initForecastCharts() {
+            const el1 = document.getElementById('forecastTempChart');
+            if (el1) {
+                const ctxForecast = el1.getContext('2d');
+                state.charts.forecast = new Chart(ctxForecast, {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({length: 15}, (_, i) => `Day ${i+1}`),
+                        datasets: [{
+                            label: 'Max Temp',
+                            data: Array.from({length: 15}, () => Math.floor(Math.random() * 10) + 25),
+                            borderColor: '#ff6b35',
+                            tension: 0.4,
+                            fill: false
+                        }, {
+                            label: 'Min Temp',
+                            data: Array.from({length: 15}, () => Math.floor(Math.random() * 10) + 15),
+                            borderColor: '#00d4ff',
+                            tension: 0.4,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { labels: { color: '#e2e8f0' } } },
+                        scales: {
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#e2e8f0' } },
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#e2e8f0' } }
+                        }
+                    }
+                });
+            }
+
+            const el2 = document.getElementById('forecastPrecipChart');
+            if (el2) {
+                const ctxPrecip = el2.getContext('2d');
+                state.charts.precip = new Chart(ctxPrecip, {
+                    type: 'bar',
+                    data: {
+                        labels: Array.from({length: 15}, (_, i) => `Day ${i+1}`),
+                        datasets: [{
+                            label: 'Rain Probability (%)',
+                            data: Array.from({length: 15}, () => Math.floor(Math.random() * 100)),
+                            backgroundColor: 'rgba(0, 212, 255, 0.5)',
+                            borderColor: '#00d4ff',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { labels: { color: '#e2e8f0' } } },
+                        scales: {
+                            y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#e2e8f0' } },
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#e2e8f0' } }
+                        }
+                    }
+                });
+            }
+        }
+
+        function initDroughtCharts() {
+            const el = document.getElementById('droughtTrendChart');
+            if (!el) return;
+            const ctxDrought = el.getContext('2d');
+            state.charts.drought = new Chart(ctxDrought, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Soil Moisture Index',
+                        data: [0.8, 0.7, 0.5, 0.4, 0.3, 0.35],
+                        borderColor: '#ff6b35',
+                        backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: '#e2e8f0' } } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#e2e8f0' } },
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#e2e8f0' } }
+                    }
+                }
+            });
+
+            const el2 = document.getElementById('cycloneImpactChart');
+            if (el2) {
+                const ctxCyclone = el2.getContext('2d');
+                state.charts.cyclone = new Chart(ctxCyclone, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Direct Hit', 'Peripheral', 'No Impact'],
+                        datasets: [{
+                            data: [15, 35, 50],
+                            backgroundColor: ['#ff3366', '#ff6b35', '#00ff88'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'bottom', labels: { color: '#e2e8f0' } } }
+                    }
+                });
+            }
+        }
+
+        function initRainfallCharts() {
+            const el1 = document.getElementById('monsoonChart');
+            if (el1) {
+                const ctxMonsoon = el1.getContext('2d');
+                state.charts.monsoon = new Chart(ctxMonsoon, {
+                    type: 'line',
+                    data: {
+                        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                        datasets: [{
+                            label: 'Actual Rainfall (mm)',
+                            data: [45, 120, 80, 150],
+                            borderColor: '#00d4ff',
+                            tension: 0.4
+                        }, {
+                            label: 'Normal Rainfall (mm)',
+                            data: [60, 100, 110, 130],
+                            borderColor: 'rgba(255,255,255,0.3)',
+                            borderDash: [5, 5],
+                            tension: 0.4
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { labels: { color: '#e2e8f0' } } } }
+                });
+            }
+
+            const el2 = document.getElementById('rainIntensityChart');
+            if (el2) {
+                const ctxRainDist = el2.getContext('2d');
+                state.charts.rainDist = new Chart(ctxRainDist, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Light', 'Moderate', 'Heavy', 'Extreme'],
+                        datasets: [{
+                            data: [40, 30, 20, 10],
+                            backgroundColor: ['#00d4ff', '#00ff88', '#ffaa00', '#ff3366']
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { position: 'right', labels: { color: '#e2e8f0' } } } }
+                });
+            }
+        }
+
+        function initClimateCharts() {
+            const el1 = document.getElementById('climateAnomalyChart');
+            if (el1) {
+                const ctxAnomaly = el1.getContext('2d');
+                state.charts.anomaly = new Chart(ctxAnomaly, {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({length: 14}, (_, i) => 1880 + i * 10),
+                        datasets: [{
+                            label: 'Temp Anomaly (°C)',
+                            data: [-0.2, -0.15, -0.1, 0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.1, 1.2, 1.3, 1.4],
+                            borderColor: '#ff3366',
+                            backgroundColor: 'rgba(255, 51, 102, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: { responsive: true }
+                });
+            }
+
+            const el2 = document.getElementById('co2Chart');
+            if (el2) {
+                const ctxCo2 = el2.getContext('2d');
+                state.charts.co2 = new Chart(ctxCo2, {
+                    type: 'line',
+                    data: {
+                        labels: ['2000', '2010', '2020', '2024'],
+                        datasets: [{
+                            label: 'CO2 ppm',
+                            data: [370, 390, 415, 421],
+                            borderColor: '#8b5cf6',
+                            tension: 0.4
+                        }]
+                    },
+                    options: { responsive: true }
+                });
+            }
+
+            const el3 = document.getElementById('seaLevelChart');
+            if (el3) {
+                const ctxSea = el3.getContext('2d');
+                state.charts.sea = new Chart(ctxSea, {
+                    type: 'line',
+                    data: {
+                        labels: ['2024', '2050', '2075', '2100'],
+                        datasets: [{
+                            label: 'Rise (m)',
+                            data: [0, 0.2, 0.5, 0.85],
+                            borderColor: '#00d4ff',
+                            tension: 0.4
+                        }]
+                    },
+                    options: { responsive: true }
+                });
+            }
+        }
+
+        function initAQICharts() {
+            const el1 = document.getElementById('pollutantRadarChart');
+            if (el1) {
+                const ctxRadar = el1.getContext('2d');
+                state.charts.radar = new Chart(ctxRadar, {
+                    type: 'radar',
+                    data: {
+                        labels: ['PM2.5', 'PM10', 'O3', 'NO2', 'SO2', 'CO'],
+                        datasets: [{
+                            label: 'Current Levels',
+                            data: [45, 60, 30, 25, 15, 10],
+                            borderColor: '#00ff88',
+                            backgroundColor: 'rgba(0, 255, 136, 0.2)'
+                        }]
+                    },
+                    options: { 
+                        responsive: true,
+                        scales: {
+                            r: {
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                angleLines: { color: 'rgba(255,255,255,0.1)' },
+                                pointLabels: { color: '#e2e8f0' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const el2 = document.getElementById('aqiForecastChart');
+            if (el2) {
+                const ctxAqiFore = el2.getContext('2d');
+                state.charts.aqiFore = new Chart(ctxAqiFore, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'AQI Forecast',
+                            data: [45, 55, 70, 65, 50, 40, 35],
+                            backgroundColor: '#00d4ff'
+                        }]
+                    },
+                    options: { responsive: true }
+                });
+            }
+        }
+
+        function initMarineCharts() {
+            const el = document.getElementById('tideChart');
+            if (!el) return;
+            const ctxTide = el.getContext('2d');
+            state.charts.tide = new Chart(ctxTide, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                    datasets: [{
+                        label: 'Tide Height (m)',
+                        data: Array.from({length: 24}, (_, i) => Math.sin(i * 0.5) + 1.5),
+                        borderColor: '#00d4ff',
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: 'rgba(0, 212, 255, 0.1)'
+                    }]
+                },
+                options: { responsive: true, scales: { x: { display: false } } }
+            });
+        }
+
+        function initAICharts() {
+            const el = document.getElementById('aiConfidenceChart');
+            if (!el) return;
+            const ctxAi = el.getContext('2d');
+            state.charts.ai = new Chart(ctxAi, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 10}, (_, i) => `T-${10-i}`),
+                    datasets: [{
+                        label: 'Confidence (%)',
+                        data: [92, 93, 91, 94, 95, 94, 96, 95, 94, 95],
+                        borderColor: '#8b5cf6',
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true, scales: { y: { min: 80, max: 100 } } }
+            });
+        }
+
+        function initHistoricalCharts() {
+            const el = document.getElementById('historicalChart');
+            if (!el) return;
+            const ctxHist = el.getContext('2d');
+            state.charts.hist = new Chart(ctxHist, {
+                type: 'bar',
+                data: {
+                    labels: ['Last Year', '5 Years Ago', '10 Years Ago', '20 Years Ago'],
+                    datasets: [{
+                        label: 'Avg Temp',
+                        data: [26.5, 25.8, 25.2, 24.5],
+                        backgroundColor: '#ff6b35'
+                    }]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        function updateHourlyMiniChart(hourly) {
+            if (!state.charts.hourly) return;
+            state.charts.hourly.data.datasets[0].data = hourly.temperature_2m.slice(0, 24);
+            state.charts.hourly.update();
+        }
+
+        function renderForecast() {
+            const container = document.getElementById('forecast-container');
+            if (!state.weatherData) return;
+            
+            container.innerHTML = '';
+            const daily = state.weatherData.daily;
+            
+            for (let i = 0; i < 15; i++) {
+                const date = new Date(daily.time[i]);
+                const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                const card = document.createElement('div');
+                card.className = 'forecast-card';
+                card.innerHTML = `
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">${dayName}</div>
+                    <div style="font-size: 0.7rem;">${date.getDate()} ${date.toLocaleString('default', { month: 'short' })}</div>
+                    <div class="weather-icon-small" style="font-size: 1.5rem; margin: 10px 0; color: var(--neon-blue);">
+                        <i class="${getWeatherIconClass(daily.weather_code[i])}"></i>
+                    </div>
+                    <div style="font-weight: bold;">${Math.round(daily.temperature_2m_max[i])}°</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">${Math.round(daily.temperature_2m_min[i])}°</div>
+                    <div style="font-size: 0.6rem; color: var(--neon-blue); margin-top: 5px;">
+                        <i class="fas fa-umbrella"></i> ${daily.precipitation_probability_max[i]}%
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        function getWeatherIconClass(code) {
+            if (code === 0) return "fas fa-sun";
+            if (code < 3) return "fas fa-cloud-sun";
+            if (code === 3) return "fas fa-cloud";
+            if (code >= 51 && code <= 67) return "fas fa-cloud-rain";
+            if (code >= 95) return "fas fa-bolt";
+            return "fas fa-cloud";
+        }
+
+        // --- Animation Engine ---
+        function initParticles() {
+            particlesJS('particles-js', {
+                "particles": {
+                    "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
+                    "color": { "value": "#00d4ff" },
+                    "shape": { "type": "circle" },
+                    "opacity": { "value": 0.2, "random": false },
+                    "size": { "value": 3, "random": true },
+                    "line_linked": { "enable": true, "distance": 150, "color": "#00d4ff", "opacity": 0.1, "width": 1 },
+                    "move": { "enable": true, "speed": 1, "direction": "none", "random": false, "straight": false, "out_mode": "out", "bounce": false }
+                },
+                "interactivity": {
+                    "detect_on": "canvas",
+                    "events": { "onhover": { "enable": true, "mode": "grab" }, "onclick": { "enable": true, "mode": "push" }, "resize": true },
+                    "modes": { "grab": { "distance": 140, "line_linked": { "opacity": 1 } }, "push": { "particles_nb": 4 } }
+                },
+                "retina_detect": true
+            });
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        // --- Simulated AI & Advanced Modules ---
+        async function searchStations() {
+            const query = document.getElementById('station-search-input').value;
+            if (!query) return;
+
+            const loader = document.getElementById('stations-loader');
+            const resultsContainer = document.getElementById('stations-results');
+            
+            loader.style.display = 'block';
+            resultsContainer.innerHTML = '';
+
+            try {
+                const { GoogleGenAI } = await import('@google/genai');
+                const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }); 
+                
+                // Prepare tool config with location if available
+                const toolConfig = {};
+                if (state.lat && state.lon) {
+                    toolConfig.retrievalConfig = {
+                        latLng: {
+                            latitude: state.lat,
+                            longitude: state.lon
+                        }
+                    };
+                }
+
+                const response = await ai.models.generateContent({
+                    model: "gemini-2.5-flash",
+                    contents: `Find metrology stations, weather facilities, or scientific laboratories related to: ${query}. List specific places found on Google Maps.`,
+                    config: {
+                        tools: [{ googleMaps: {} }],
+                        toolConfig: toolConfig
+                    },
+                });
+
+                loader.style.display = 'none';
+
+                const text = response.text || "No detailed description available.";
+                const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+
+                if (chunks && chunks.length > 0) {
+                    chunks.forEach(chunk => {
+                        if (chunk.maps) {
+                            const card = document.createElement('div');
+                            card.className = 'glass-card animate__animated animate__fadeIn';
+                            card.style.borderLeft = '3px solid var(--neon-blue)';
+                            
+                            let snippetsHtml = '';
+                            if (chunk.maps.placeAnswerSources && chunk.maps.placeAnswerSources.reviewSnippets) {
+                                snippetsHtml = chunk.maps.placeAnswerSources.reviewSnippets.map(s => 
+                                    `<div style="font-size: 0.75rem; font-style: italic; margin-top: 8px; color: var(--text-muted);">"${s.text}"</div>`
+                                ).join('');
+                            }
+
+                            card.innerHTML = `
+                                <div style="font-weight: bold; color: var(--neon-blue); margin-bottom: 10px;">${chunk.maps.title || 'Location'}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
+                                    <i class="fas fa-map-pin"></i> Verified via Google Maps
+                                </div>
+                                ${snippetsHtml}
+                                <div style="margin-top: 15px;">
+                                    <a href="${chunk.maps.uri}" target="_blank" class="lang-btn" style="display: inline-block; text-decoration: none; text-align: center; width: 100%;">
+                                        <i class="fas fa-external-link-alt"></i> View on Google Maps
+                                    </a>
+                                </div>
+                            `;
+                            resultsContainer.appendChild(card);
+                        }
+                    });
+                } else {
+                    resultsContainer.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px;">No specific locations found for this query. Try a different search term.</div>`;
+                }
+
+                // Also show the AI's textual response
+                const textCard = document.createElement('div');
+                textCard.className = 'glass-card ai-panel';
+                textCard.style.gridColumn = '1 / -1';
+                textCard.style.marginTop = '20px';
+                textCard.innerHTML = `
+                    <div class="card-title">AI ANALYSIS <i class="fas fa-robot"></i></div>
+                    <div style="font-size: 0.9rem; line-height: 1.6;">${text}</div>
+                `;
+                resultsContainer.prepend(textCard);
+
+            } catch (error) {
+                console.error("Search failed:", error);
+                loader.style.display = 'none';
+                resultsContainer.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--neon-red); padding: 20px;">Error connecting to Google Maps Grounding. Please check your connection or API key.</div>`;
+            }
+        }
+        
+    </script>
+</body>
+</html>
